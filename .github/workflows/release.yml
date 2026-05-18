@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Existing tag to release from (e.g. v1.0.0)'
+        required: true
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.inputs.tag || github.ref }}
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Extract version from tag
+        id: ver
+        run: |
+          if [ -n "${{ github.event.inputs.tag }}" ]; then
+            TAG="${{ github.event.inputs.tag }}"
+          else
+            TAG="${GITHUB_REF#refs/tags/}"
+          fi
+          VERSION="${TAG#v}"
+          DOTS=$(echo "$VERSION" | tr -cd '.' | wc -c)
+          while [ "$DOTS" -lt 3 ]; do
+            VERSION="${VERSION}.0"
+            DOTS=$((DOTS + 1))
+          done
+          echo "tag=${TAG}"         >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "Resolved tag=${TAG}, version=${VERSION}"
+
+      - name: Build (Release)
+        run: dotnet build Jellyfin.Plugin.BakiPicks/Jellyfin.Plugin.BakiPicks.csproj -c Release
+
+      - name: Package zip + meta.json + checksum
+        id: pack
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          mkdir -p dist
+          cp Jellyfin.Plugin.BakiPicks/bin/Release/net8.0/Jellyfin.Plugin.BakiPicks.dll dist/
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          cat > dist/meta.json <<EOF
+          {
+            "category": "General",
+            "changelog": "See GitHub release notes",
+            "description": "Netflix-style auto-generated category rows for your Jellyfin library.",
+            "guid": "a4f2b8e1-7c3d-4f5a-9b2e-6d8c1f4a3e9b",
+            "name": "BakiPicks",
+            "overview": "Daily scheduled task analyses your library and watch history, exposes ranked Netflix-style rows via REST endpoints.",
+            "owner": "${{ github.repository_owner }}",
+            "targetAbi": "10.10.0.0",
+            "timestamp": "${TIMESTAMP}",
+            "version": "${VERSION}"
+          }
+          EOF
+
+          cd dist
+          ZIP="bakipicks-${VERSION}.zip"
+          zip -j "$ZIP" Jellyfin.Plugin.BakiPicks.dll meta.json
+          CHECKSUM=$(md5sum "$ZIP" | awk '{print $1}')
+          echo "zip=${ZIP}"            >> "$GITHUB_OUTPUT"
+          echo "checksum=${CHECKSUM}"  >> "$GITHUB_OUTPUT"
+
+      - name: Create / update GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.tag }}
+          files: dist/${{ steps.pack.outputs.zip }}
+          generate_release_notes: true
+
+      - name: Update manifest.json on main
+        env:
+          TAG: ${{ steps.ver.outputs.tag }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          CHECKSUM: ${{ steps.pack.outputs.checksum }}
+          ZIP_NAME: ${{ steps.pack.outputs.zip }}
+        run: |
+          REPO_URL="https://github.com/${{ github.repository }}"
+          SOURCE_URL="${REPO_URL}/releases/download/${TAG}/${ZIP_NAME}"
+          TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+
+          git fetch origin main
+          git checkout main
+
+          jq \
+            --arg v "$VERSION" \
+            --arg u "$SOURCE_URL" \
+            --arg c "$CHECKSUM" \
+            --arg t "$TIMESTAMP" \
+            '.[0].versions = ([{
+              "version":   $v,
+              "changelog": "See GitHub release notes",
+              "targetAbi": "10.10.0.0",
+              "sourceUrl": $u,
+              "checksum":  $c,
+              "timestamp": $t
+            }] + .[0].versions)' manifest.json > manifest.tmp
+          mv manifest.tmp manifest.json
+
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json
+          git commit -m "Update manifest.json for ${TAG}" || echo "manifest unchanged"
+          git push origin main
