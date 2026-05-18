@@ -7,7 +7,7 @@ Netflix-style auto-generated category rows for Jellyfin. Runs as a server-side p
 1. In Jellyfin: **Dashboard → Plugins → Repositories → Add**
 2. Repository URL:
    ```
-   https://raw.githubusercontent.com/<your-github-user>/bakipicks/main/manifest.json
+   https://raw.githubusercontent.com/<your-github-user>/bakipicks/main/manifest.json](https://github.com/nishantkapur/bakipicks/blob/main/manifest.json
    ```
 3. Save → go to **Catalog** → install **BakiPicks** → restart Jellyfin when prompted
 
