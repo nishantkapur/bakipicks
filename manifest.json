@@ -1,0 +1,12 @@
+[
+  {
+    "guid": "a4f2b8e1-7c3d-4f5a-9b2e-6d8c1f4a3e9b",
+    "name": "BakiPicks",
+    "description": "Netflix-style auto-generated category rows for your Jellyfin library.",
+    "overview": "Analyses library metadata + watch history daily, produces Netflix-style ranked category rows via REST endpoints.",
+    "owner": "nishantkapoor",
+    "category": "General",
+    "imageUrl": "",
+    "versions": []
+  }
+]

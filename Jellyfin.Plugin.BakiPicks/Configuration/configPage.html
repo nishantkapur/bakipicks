@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>BakiPicks</title>
+</head>
+<body>
+<div id="BakiPicksConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-select,emby-checkbox">
+
+    <div data-role="content">
+        <div class="content-primary">
+            <form id="BakiPicksConfigForm">
+                <h1>BakiPicks</h1>
+                <p>Netflix-style auto-generated rows for your library.</p>
+
+                <div class="selectContainer">
+                    <label class="selectLabel" for="TargetUserId">Target User</label>
+                    <select is="emby-select" id="TargetUserId"></select>
+                    <div class="fieldDescription">The Jellyfin user whose watch history drives the recommendations.</div>
+                </div>
+
+                <div class="inputContainer">
+                    <label for="MaxCategories">Max categories on home screen</label>
+                    <input is="emby-input" type="number" id="MaxCategories" min="3" max="20" />
+                </div>
+
+                <div class="inputContainer">
+                    <label for="MinItemsPerCategory">Minimum items per category</label>
+                    <input is="emby-input" type="number" id="MinItemsPerCategory" min="5" max="100" />
+                </div>
+
+                <div class="checkboxContainer">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="IncludeExploration" />
+                        <span>Include exploration rows (anti-filter-bubble)</span>
+                    </label>
+                </div>
+
+                <div class="inputContainer">
+                    <label for="DiversityCoefficient">Diversity coefficient (0.0 – 1.0)</label>
+                    <input is="emby-input" type="number" id="DiversityCoefficient" min="0" max="1" step="0.05" />
+                </div>
+
+                <details style="margin-top:1em;">
+                    <summary><b>Advanced — signal weights</b></summary>
+                    <div class="inputContainer">
+                        <label for="FullWatchWeight">Full watch (≥85%)</label>
+                        <input is="emby-input" type="number" id="FullWatchWeight" step="0.1" />
+                    </div>
+                    <div class="inputContainer">
+                        <label for="PartialWatchWeight">Partial watch (30–85%)</label>
+                        <input is="emby-input" type="number" id="PartialWatchWeight" step="0.1" />
+                    </div>
+                    <div class="inputContainer">
+                        <label for="LightWatchWeight">Light watch (5–30%)</label>
+                        <input is="emby-input" type="number" id="LightWatchWeight" step="0.1" />
+                    </div>
+                    <div class="inputContainer">
+                        <label for="SkipWeight">Skip (&lt;5%)</label>
+                        <input is="emby-input" type="number" id="SkipWeight" step="0.1" />
+                    </div>
+                    <div class="inputContainer">
+                        <label for="FavoriteWeight">Favorite bonus</label>
+                        <input is="emby-input" type="number" id="FavoriteWeight" step="0.1" />
+                    </div>
+                    <div class="inputContainer">
+                        <label for="ReplayMultiplier">Replay multiplier</label>
+                        <input is="emby-input" type="number" id="ReplayMultiplier" step="0.1" />
+                    </div>
+                    <div class="inputContainer">
+                        <label for="SmoothingMinSamples">Smoothing min samples</label>
+                        <input is="emby-input" type="number" id="SmoothingMinSamples" min="1" />
+                    </div>
+                </details>
+
+                <div class="checkboxContainer" style="margin-top:1em;">
+                    <label>
+                        <input is="emby-checkbox" type="checkbox" id="VerboseLogging" />
+                        <span>Verbose logging</span>
+                    </label>
+                </div>
+
+                <div style="margin-top:1em;">
+                    <button is="emby-button" type="submit" class="raised button-submit block">
+                        <span>Save</span>
+                    </button>
+                    <button is="emby-button" type="button" id="RebuildNowBtn" class="raised block">
+                        <span>Rebuild Now</span>
+                    </button>
+                    <button is="emby-button" type="button" id="ResetSeedsBtn" class="block">
+                        <span>Reset Taxonomy Seeds to Defaults</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        var BakiPicksConfig = {
+            pluginUniqueId: 'a4f2b8e1-7c3d-4f5a-9b2e-6d8c1f4a3e9b'
+        };
+
+        document.querySelector('#BakiPicksConfigPage').addEventListener('pageshow', function () {
+            Dashboard.showLoadingMsg();
+            ApiClient.getUsers().then(function (users) {
+                var sel = document.querySelector('#TargetUserId');
+                sel.innerHTML = users.map(function (u) {
+                    return '<option value="' + u.Id + '">' + u.Name + '</option>';
+                }).join('');
+
+                ApiClient.getPluginConfiguration(BakiPicksConfig.pluginUniqueId).then(function (config) {
+                    document.querySelector('#TargetUserId').value = config.TargetUserId || (users[0] && users[0].Id) || '';
+                    document.querySelector('#MaxCategories').value = config.MaxCategories;
+                    document.querySelector('#MinItemsPerCategory').value = config.MinItemsPerCategory;
+                    document.querySelector('#IncludeExploration').checked = config.IncludeExploration;
+                    document.querySelector('#DiversityCoefficient').value = config.DiversityCoefficient;
+                    document.querySelector('#FullWatchWeight').value = config.FullWatchWeight;
+                    document.querySelector('#PartialWatchWeight').value = config.PartialWatchWeight;
+                    document.querySelector('#LightWatchWeight').value = config.LightWatchWeight;
+                    document.querySelector('#SkipWeight').value = config.SkipWeight;
+                    document.querySelector('#FavoriteWeight').value = config.FavoriteWeight;
+                    document.querySelector('#ReplayMultiplier').value = config.ReplayMultiplier;
+                    document.querySelector('#SmoothingMinSamples').value = config.SmoothingMinSamples;
+                    document.querySelector('#VerboseLogging').checked = config.VerboseLogging;
+                    Dashboard.hideLoadingMsg();
+                });
+            });
+        });
+
+        document.querySelector('#BakiPicksConfigForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            Dashboard.showLoadingMsg();
+            ApiClient.getPluginConfiguration(BakiPicksConfig.pluginUniqueId).then(function (config) {
+                config.TargetUserId = document.querySelector('#TargetUserId').value;
+                config.MaxCategories = parseInt(document.querySelector('#MaxCategories').value, 10);
+                config.MinItemsPerCategory = parseInt(document.querySelector('#MinItemsPerCategory').value, 10);
+                config.IncludeExploration = document.querySelector('#IncludeExploration').checked;
+                config.DiversityCoefficient = parseFloat(document.querySelector('#DiversityCoefficient').value);
+                config.FullWatchWeight = parseFloat(document.querySelector('#FullWatchWeight').value);
+                config.PartialWatchWeight = parseFloat(document.querySelector('#PartialWatchWeight').value);
+                config.LightWatchWeight = parseFloat(document.querySelector('#LightWatchWeight').value);
+                config.SkipWeight = parseFloat(document.querySelector('#SkipWeight').value);
+                config.FavoriteWeight = parseFloat(document.querySelector('#FavoriteWeight').value);
+                config.ReplayMultiplier = parseFloat(document.querySelector('#ReplayMultiplier').value);
+                config.SmoothingMinSamples = parseInt(document.querySelector('#SmoothingMinSamples').value, 10);
+                config.VerboseLogging = document.querySelector('#VerboseLogging').checked;
+                ApiClient.updatePluginConfiguration(BakiPicksConfig.pluginUniqueId, config).then(function (r) {
+                    Dashboard.processPluginConfigurationUpdateResult(r);
+                });
+            });
+            return false;
+        });
+
+        document.querySelector('#RebuildNowBtn').addEventListener('click', function () {
+            Dashboard.showLoadingMsg();
+            ApiClient.ajax({
+                type: 'POST',
+                url: ApiClient.getUrl('BakiPicks/Rebuild')
+            }).then(function () {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('Rebuild queued. Watch Scheduled Tasks for progress.');
+            }).catch(function () {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert({ message: 'Failed to trigger rebuild.', title: 'Error' });
+            });
+        });
+
+        document.querySelector('#ResetSeedsBtn').addEventListener('click', function () {
+            if (!confirm('Delete the on-disk taxonomy_seeds.json and re-extract the bundled defaults on next rebuild?')) {
+                return;
+            }
+            Dashboard.showLoadingMsg();
+            ApiClient.ajax({
+                type: 'POST',
+                url: ApiClient.getUrl('BakiPicks/Seeds/Reset')
+            }).then(function () {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert('Seeds reset. Run "Rebuild Now" to regenerate categories.');
+            }).catch(function () {
+                Dashboard.hideLoadingMsg();
+                Dashboard.alert({ message: 'Failed to reset seeds.', title: 'Error' });
+            });
+        });
+    </script>
+</div>
+</body>
+</html>
