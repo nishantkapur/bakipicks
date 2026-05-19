@@ -68,7 +68,7 @@ jobs:
             "name": "BakiPicks",
             "overview": "Daily scheduled task analyses your library and watch history, exposes ranked Netflix-style rows via REST endpoints.",
             "owner": "${{ github.repository_owner }}",
-            "targetAbi": "10.10.0.0",
+            "targetAbi": "10.11.0.0",
             "timestamp": "${TIMESTAMP}",
             "version": "${VERSION}"
           }
@@ -110,7 +110,7 @@ jobs:
             '.[0].versions = ([{
               "version":   $v,
               "changelog": "See GitHub release notes",
-              "targetAbi": "10.10.0.0",
+              "targetAbi": "10.11.0.0",
               "sourceUrl": $u,
               "checksum":  $c,
               "timestamp": $t
