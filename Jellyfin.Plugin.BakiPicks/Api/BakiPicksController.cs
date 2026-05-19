@@ -17,7 +17,7 @@ using Microsoft.Extensions.Logging;
 namespace Jellyfin.Plugin.BakiPicks.Api;
 
 [ApiController]
-[Authorize(Policy = "DefaultAuthorization")]
+[Authorize]
 [Route("BakiPicks")]
 [Produces("application/json")]
 public class BakiPicksController : ControllerBase
