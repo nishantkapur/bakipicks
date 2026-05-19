@@ -56,7 +56,7 @@ jobs:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           mkdir -p dist
-          cp Jellyfin.Plugin.BakiPicks/bin/Release/net8.0/Jellyfin.Plugin.BakiPicks.dll dist/
+          cp Jellyfin.Plugin.BakiPicks/bin/Release/net9.0/Jellyfin.Plugin.BakiPicks.dll dist/
           TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
           cat > dist/meta.json <<EOF
