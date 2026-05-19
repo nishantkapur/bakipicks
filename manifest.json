@@ -13,6 +13,14 @@
         "changelog": "See GitHub release notes",
         "targetAbi": "10.11.0.0",
         "sourceUrl": "https://github.com/nishantkapur/bakipicks/releases/download/v1.0.4/bakipicks-1.0.4.0.zip",
+        "checksum": "c430c716e79010feae5d314d88e735d9",
+        "timestamp": "2026-05-19T05:19:27Z"
+      },
+      {
+        "version": "1.0.4.0",
+        "changelog": "See GitHub release notes",
+        "targetAbi": "10.11.0.0",
+        "sourceUrl": "https://github.com/nishantkapur/bakipicks/releases/download/v1.0.4/bakipicks-1.0.4.0.zip",
         "checksum": "3abf9eb7692a944793c480317ff63789",
         "timestamp": "2026-05-19T05:19:04Z"
       },
