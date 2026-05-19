@@ -63,7 +63,9 @@ public class BakiPicksController : ControllerBase
                     Title = c.Title,
                     Rank = c.Rank,
                     ItemCount = c.ItemCount,
-                    Source = c.Source
+                    Source = c.Source,
+                    SortBy = c.SortBy,
+                    MatchedItemIds = c.MatchedItemIds.ToList()
                 })
                 .ToList()
         };
